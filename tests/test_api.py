@@ -27,3 +27,31 @@ class TestAviasalesAPI:
         with allure.step("Проверка ответа"):
             assert response.status_code == 200
             assert isinstance(response.json(), dict)
+
+    @allure.story("Невалидные параметры поиска")
+    def test_invalid_search_params(self):
+        """Тест с некорректными параметрами (ошибка 400)"""
+        invalid_params = {
+            "origin": "INVALID_CODE",
+            "destination": "UNKNOWN",
+            "currency": "RUB"
+        }
+        response = requests.get(f"{API_ENDPOINT}/prices_for_dates", params=invalid_params)
+        assert response.status_code == 400, "Ожидалась ошибка 400"
+
+    @allure.story("Поиск без обязательных параметров")
+    def test_missing_required_params(self):
+        """Тест с отсутствующим параметром 'origin'"""
+        response = requests.get(f"{API_ENDPOINT}/prices_for_dates", params={"destination": "LED"})
+        assert response.status_code != 200, "API принял запрос без обязательного параметра"
+
+    @allure.story("Граничные значения дат")
+    def test_past_date_search(self):
+        """Тест с прошедшей датой (должен вернуть ошибку)"""
+        params = {
+            "origin": "MOW",
+            "destination": "LED",
+            "depart_date": "2020-01-01"  # Прошедшая дата
+        }
+        response = requests.get(f"{API_ENDPOINT}/prices_for_dates", params=params)
+        assert response.status_code == 400 or "error" in response.json()

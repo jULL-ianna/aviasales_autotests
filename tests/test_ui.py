@@ -5,6 +5,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from config.settings import BASE_URL, TEST_CITIES
 
+
 class Locators:
     """Актуальные локаторы для Aviasales"""
     COOKIE_ACCEPT = (By.ID, "cookie-accept")
@@ -12,6 +13,7 @@ class Locators:
     FROM_INPUT = (By.CSS_SELECTOR, "input[data-qa='search-input']")
     SUGGESTION_ITEM = (By.CSS_SELECTOR, "div[data-qa='suggestion-item']")
     WEEKEND_BUTTON = (By.XPATH, "//button[contains(text(), 'Куда-нибудь')]")
+
 
 @allure.feature("UI Тесты Aviasales")
 class TestAviasalesUI:
@@ -50,3 +52,43 @@ class TestAviasalesUI:
             suggestions = WebDriverWait(browser, 5).until(
                 EC.presence_of_all_elements_located(Locators.SUGGESTION_ITEM))
             assert len(suggestions) > 0, "Нет подсказок"
+
+    @allure.story("Поиск несуществующего города")
+    def test_invalid_city_search(self, browser):
+        """Тест с некорректным городом (должен показать ошибку)"""
+        with allure.step("Ввод несуществующего города"):
+            input_field = WebDriverWait(browser, 10).until(
+                EC.element_to_be_clickable(Locators.FROM_INPUT))
+            input_field.clear()
+            input_field.send_keys("XYZ123")
+            
+        with allure.step("Проверка сообщения об ошибке"):
+            error_msg = WebDriverWait(browser, 5).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, "[data-qa='error-message']")))
+            assert "Не найдено" in error_msg.text
+
+    @allure.story("Пустой поиск")
+    def test_empty_search(self, browser):
+        """Тест с пустым полем ввода"""
+        with allure.step("Очистка поля ввода"):
+            input_field = WebDriverWait(browser, 10).until(
+                EC.element_to_be_clickable(Locators.FROM_INPUT))
+            input_field.clear()
+            
+        with allure.step("Проверка подсказок"):
+            suggestions = browser.find_elements(*Locators.SUGGESTION_ITEM)
+            assert len(suggestions) == 0, "Подсказки отображаются для пустого запроса"
+
+    @allure.story("Спецсимволы в поиске")
+    def test_special_chars_search(self, browser):
+        """Тест с спецсимволами (должен игнорировать их)"""
+        with allure.step("Ввод спецсимволов"):
+            input_field = WebDriverWait(browser, 10).until(
+                EC.element_to_be_clickable(Locators.FROM_INPUT))
+            input_field.clear()
+            input_field.send_keys("#$%^&*")
+            
+        with allure.step("Проверка отсутствия результатов"):
+            error_msg = WebDriverWait(browser, 5).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, "[data-qa='error-message']")))
+            assert "Не найдено" in error_msg.text
