@@ -1,14 +1,14 @@
-import pytest
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
+import pytest
 
 @pytest.fixture
 def browser():
-    """Фикстура для инициализации браузера"""
-    options = Options()
-    options.add_argument("--start-maximized")
-    options.add_argument("--disable-notifications")
+    options = webdriver.ChromeOptions()
+    options.add_argument('--ignore-ssl-errors=yes')
+    options.add_argument('--ignore-certificate-errors')
+    options.add_argument('--start-maximized')
+    options.add_argument('--disable-extensions')
     driver = webdriver.Chrome(options=options)
-    driver.implicitly_wait(5)
+    driver.implicitly_wait(10)  # Глобальное неявное ожидание
     yield driver
     driver.quit()
